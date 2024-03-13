@@ -6,7 +6,91 @@ from notes import Notes
 from prompt_toolkit import prompt
 from prompt_toolkit.completion import WordCompleter
 from folder_sorter import sort_folder
+from abc import ABC, abstractmethod
 
+
+class View(ABC):
+    @abstractmethod
+    def display_contacts(self):
+        pass
+    
+    @abstractmethod
+    def display_notes(self):
+        pass
+
+    @abstractmethod
+    def display_help(self):
+        pass
+
+
+class ConsoleView(View):
+    def display_contacts(self, data):
+        return data
+    
+    def display_notes(self, data):
+        return data
+
+    def display_help(self):
+        commands_help = {
+            'add': '''Bot saves the new contact, you should input:
+                <name> 
+                <phone number> 10 digits format
+                <date of birthday> "DD.MM.YYYY" format; (optional)
+                <email> "name@test.com" format; (optional)
+                <address> (optional)
+                <pass> if you want to skip optionals''',
+            'birthday': '''Bot shows the nearest contacts birthday by given term (default: 7 days):
+                <depth in days>''',
+            'close': 'Bot completes its work',
+            'create tag': '''Bot creates the tag''',
+            'delete': '''Bot deletes the contact
+                <name>''',
+            'edit address': '''Bot edits the address for contact:
+                <name>
+                <address>''',
+            'edit birthday': '''Bot edits the birthday for contact:
+                <name>
+                <date of birthday>''',
+            'edit email': '''Bot edits the email for contact:
+                <name>
+                <email>''',
+            'edit note': '''Bot edits the note:
+                <title>
+                <text>''',
+            'edit phone': '''Bot edits the phone for contact:
+                <name>
+                <phone>
+                <new phone>''',
+            'exit': 'Bot completes its work',
+            'find notes by tags': '''Bot searchs the notes by tag:
+                <tag>''',
+            'good bye': 'Bot completes its work',
+            'hello': 'Greetings in return',
+            'help': 'Bot shows the help info',
+            'link tag': '''Bot attaches a tag to the note:
+                <title>
+                <tag>''',
+            'phone': '''Bot displays the phone number for the given name:
+                <name>''',
+            'remove note': '''Bot removes the note by title:
+                <title>''',
+            'show all': 'Bot displays all saved contacts',
+            'show notes': 'Bit displays all saved notes',
+            'search notes': '''Bot searchs the notes by title:
+                <title>''',
+            'search phone': 'Bot displays the contact at your request',
+            'sort folder': '''Bot sort the folder by file\'s type (image, documents, music, video, archive, other):
+                <path to folder>''',
+            'write note': '''Bot saves the note:
+                <title>
+                <text> (optional)''',
+        }
+
+        help = ''
+        for key, value in commands_help.items():
+            help += '\n{:<10}\n\t{:<50}\n'.format(key+':', value)
+        return help
+        
 
 def input_birthday():
     birthday = input('    Input date of birthday: ')
@@ -23,7 +107,9 @@ def input_address():
     return Address(address)
 
   
-class Bot:
+class Bot():
+    _user_interface = ConsoleView()
+
     def __init__(self) -> None:
         self.contacts_file = 'contacts.bin'
         self.notes_file = 'notes.bin'
@@ -176,69 +262,13 @@ class Bot:
     def show_all(self):
         if not self.book.data:
             return 'You have no any contacts saved'
-        
-        return self.book.get_records()
+        return Bot._user_interface.display_contacts(self.book.get_records())
+
+    def show_notes(self) -> str:
+        return Bot._user_interface.display_notes(self.notes.get_notes())
     
     def help(self):
-        commands_help = {
-            'add': '''Bot saves the new contact, you should input:
-                <name> 
-                <phone number> 10 digits format
-                <date of birthday> "DD.MM.YYYY" format; (optional)
-                <email> "name@test.com" format; (optional)
-                <address> (optional)
-                <pass> if you want to skip optionals''',
-            'birthday': '''Bot shows the nearest contacts birthday by given term (default: 7 days):
-                <depth in days>''',
-            'close': 'Bot completes its work',
-            'create tag': '''Bot creates the tag''',
-            'delete': '''Bot deletes the contact
-                <name>''',
-            'edit address': '''Bot edits the address for contact:
-                <name>
-                <address>''',
-            'edit birthday': '''Bot edits the birthday for contact:
-                <name>
-                <date of birthday>''',
-            'edit email': '''Bot edits the email for contact:
-                <name>
-                <email>''',
-            'edit note': '''Bot edits the note:
-                <title>
-                <text>''',
-            'edit phone': '''Bot edits the phone for contact:
-                <name>
-                <phone>
-                <new phone>''',
-            'exit': 'Bot completes its work',
-            'find notes by tags': '''Bot searchs the notes by tag:
-                <tag>''',
-            'good bye': 'Bot completes its work',
-            'hello': 'Greetings in return',
-            'help': 'Bot shows the help info',
-            'link tag': '''Bot attaches a tag to the note:
-                <title>
-                <tag>''',
-            'phone': '''Bot displays the phone number for the given name:
-                <name>''',
-            'remove note': '''Bot removes the note by title:
-                <title>''',
-            'show all': 'Bot displays all saved contacts',
-            'show notes': 'Bit displays all saved notes',
-            'search notes': '''Bot searchs the notes by title:
-                <title>''',
-            'search phone': 'Bot displays the contact at your request',
-            'sort folder': '''Bot sort the folder by file\'s type (image, documents, music, video, archive, other):
-                <path to folder>''',
-            'write note': '''Bot saves the note:
-                <title>
-                <text> (optional)''',
-        }
-
-        help = ''
-        for key, value in commands_help.items():
-            help += '\n{:<10}\n\t{:<50}\n'.format(key+':', value)
-        return help
+        return Bot._user_interface.display_help()
 
     @input_error
     def edit_phone(self):
@@ -379,9 +409,6 @@ class Bot:
         note_title = input('Please, input the title of note you want to add: ')
         tag_name = input('Please, input the name of tag you want to add: ')
         return self.notes.add_tag_for_note(tag_name, note_title)
-    
-    def show_notes(self) -> str:
-        return self.notes.get_notes()
 
     def set_compliter(self):
         function_names = list()
